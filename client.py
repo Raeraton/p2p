@@ -1,20 +1,42 @@
 import socket
 import json
-import p2p
+import time
 import random
+import p2p
 
-my_port = random.randrange(17000, 60000)
+
+
+# get peer ip and port
+IP, PORT = "0.0.0.0", 1235
+
+time.sleep(random.randrange(1, 1001) / 1000)
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.connect(("127.0.0.1", 1237))
+sock.connect((IP, PORT))
 
-sock.send(f"{my_port}".encode("utf-8"))
+my_ip, my_port = sock.getsockname()
+print(f"running on {my_ip}:{my_port}")
+
+sock.send(b"0")
 other_peer = json.loads( sock.recv(256) )
 
-print(f"other peer is {other_peer["ip"]}:{other_peer["port"]}")
+peer_ip, peer_port = other_peer["ip"], other_peer["port"]
+print(f"other peer is {peer_ip}:{peer_port}")
 
-friend = p2p.P2PConnection(my_port, other_peer["ip"], other_peer["port"])
+sock.close()
 
+
+
+# make p2p stuff
+p2pConn = p2p.P2PConnection(my_port, peer_ip, peer_port)
+
+to_send = 1
+last_recvd = 0
+error_count = 0
 while 1:
-    friend.send(b"hello")
-    print(friend.recv())  
+    p2pConn.send(f'{to_send}'.encode())
+    recvd = int( p2pConn.recv().decode() )
+    if recvd != last_recvd + 1: error_count += 1
+    last_recvd = recvd
+    print(f"sent: {to_send}    recvd: {recvd}    errors: {error_count}")
+    to_send += 1
