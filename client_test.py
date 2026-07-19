@@ -56,6 +56,7 @@ while 1:
         up_speed = bytes_sent
         bytes_recved = 0
         bytes_sent = 0
+        timepoint = tn
 
     print(f"sent: {to_send}    recvd: {recvd}    errors: {error_count}   upspeed: {up_speed*8} b/s  downspeed: {down_speed*8} b/s")
     to_send += 1
