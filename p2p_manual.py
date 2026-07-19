@@ -1,6 +1,7 @@
 from requests import get
 from p2p import P2PConnection
 from threading import Thread
+from time import sleep
 
 
 ip = get('https://api.ipify.org').content.decode('utf8')
@@ -24,7 +25,6 @@ def recvr_th():
 
 Thread(target=recvr_th).start()
 
-
 while 1:
     con.send(b"hello")
-    print(con.recv())  
+    sleep(0.1)
