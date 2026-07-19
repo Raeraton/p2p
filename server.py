@@ -2,6 +2,8 @@ import socket
 import time
 import threading
 import json
+import urllib.request
+
 
 
 class Cupple:
@@ -145,7 +147,8 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.bind((IP, PORT))
 sock.listen(1)
 
-print(f"listening on {IP}:{PORT}")
+external_ip = urllib.request.urlopen('https://api.ipify.org').read().decode('utf8')
+print(f"listening on local: {IP}:{PORT}  public (maybe): {external_ip}")
 
 
 while 1:
