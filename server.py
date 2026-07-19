@@ -142,7 +142,7 @@ def handle_client(cli: socket.socket, addr: tuple):
         print(f"[ERROR] other. {e}")
         
 
-IP, PORT = "192.168.1.99", 1235
+IP, PORT = "0.0.0.0", 1235
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.bind((IP, PORT))
 sock.listen(1)

@@ -33,10 +33,29 @@ p2pConn = p2p.P2PConnection(my_port, peer_ip, peer_port)
 to_send = 1
 last_recvd = 0
 error_count = 0
+bytes_sent = 0
+up_speed = 0
+bytes_recved = 0
+down_speed = 0
+timepoint = time.time()
 while 1:
-    p2pConn.send(f'{to_send}'.encode())
-    recvd = int( p2pConn.recv().decode() )
+    bytes_to_send = f'{to_send}'.encode()
+    bytes_sent += len(bytes_to_send)
+    p2pConn.send(bytes_to_send)
+
+    bytes_recv = p2pConn.recv()
+    bytes_recved = len(bytes_recv)
+
+    recvd = int( bytes_recv.decode() )
     if recvd != last_recvd + 1: error_count += 1
     last_recvd = recvd
-    print(f"sent: {to_send}    recvd: {recvd}    errors: {error_count}")
+
+    tn = time.time()
+    if tn - timepoint >= 1:
+        down_speed = bytes_recved
+        up_speed = bytes_sent
+        bytes_recved = 0
+        bytes_sent = 0
+
+    print(f"sent: {to_send}    recvd: {recvd}    errors: {error_count}   upspeed: {up_speed*8} b/s  downspeed: {down_speed*8} b/s")
     to_send += 1
