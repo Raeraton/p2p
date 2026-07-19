@@ -112,14 +112,20 @@ def handle_client(cli: socket.socket, addr: tuple):
     global cupple
     ip, port = "", 0
     try:
+
+
+        print( f"[LOG] {addr[0]}:{addr[1]} connected" )
+
         port = int(cli.recv(1024).decode("utf-8"))
         if port == 0: port = addr[1]
 
         ip = addr[0]
 
         cupple.regist(ip, port)
+        print( f"[LOG] {ip}:{port} registered" )
 
         other = cupple.other(ip, port)
+        print( f"[LOG] {ip}:{port} cuppled with {other[0]}{other[1]}" )
 
         cupple.clear()
 
@@ -129,7 +135,8 @@ def handle_client(cli: socket.socket, addr: tuple):
         }).encode("utf-8")
 
         cli.send(to_send)
-        cli.close()
+        print( f"[LOG] {ip}:{port} notified" )
+
 
     except Cupple.IHaveABoyfriend as e:
         cupple.unregist(ip, port)
@@ -142,7 +149,7 @@ def handle_client(cli: socket.socket, addr: tuple):
         print(f"[ERROR] other. {e}")
         
 
-IP, PORT = "0.0.0.0", 1235
+IP, PORT = "127.0.0.1", 1235
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.bind((IP, PORT))
 sock.listen(1)
