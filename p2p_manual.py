@@ -19,7 +19,8 @@ def recvr_th():
         data = con.recv()
         try:
             print(data.decode("utf-8"))
-        except: pass
+        except Exception as e:
+            print(f"err {e}")
 
 Thread(target=recvr_th).start()
 
