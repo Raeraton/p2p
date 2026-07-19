@@ -24,6 +24,7 @@ def recvr_th():
 
 Thread(target=recvr_th).start()
 
+
 while 1:
-    msg = input("-&").encode("utf-8")
-    con.send( msg )
+    con.send(b"hello")
+    print(con.recv())  
