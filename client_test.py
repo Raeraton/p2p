@@ -1,62 +1,39 @@
 import socket
 import json
 import time
-import random
 import p2p
 
 
+MY_ADDR = ("0.0.0.0", 0)
+SERVER_ADDR = ("127.0.0.1", 1234)
 
-# get peer ip and port
-IP, PORT = input("enter ip: "), 1235
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind(MY_ADDR)
 
-time.sleep(random.randrange(1, 1001) / 1000)
+target_addr: tuple = None
+while True:
+    time.sleep(1)
+    try:
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.connect((IP, PORT))
+        sock.sendto(b'\x00', SERVER_ADDR)
+        data, addr = sock.recvfrom(1200)
 
-my_ip, my_port = sock.getsockname()
-print(f"running on {my_ip}:{my_port}")
+        if data == b'OK':
+            continue
 
-sock.send(b"0")
-other_peer = json.loads( sock.recv(256) )
+        data = json.loads(data)
+        target_addr = ( data["ip"], data["port"] )
+        break
 
-peer_ip, peer_port = other_peer["ip"], other_peer["port"]
-print(f"other peer is {peer_ip}:{peer_port}")
-
-sock.close()
-
+    except Exception as e:
+        print(f"[ERROR] {e}")
 
 
-# make p2p stuff
-p2pConn = p2p.P2PConnection(my_port, peer_ip, peer_port)
+print(f"other peer is: {target_addr[0]}:{target_addr[1]}")
 
-to_send = 1
-last_recvd = 0
-error_count = 0
-bytes_sent = 0
-up_speed = 0
-bytes_recved = 0
-down_speed = 0
-timepoint = time.time()
+connection = p2p.P2PConnection(sock, target_addr[0], target_addr[1])
+
 while 1:
-    bytes_to_send = f'{to_send}'.encode()
-    bytes_sent += len(bytes_to_send)
-    p2pConn.send(bytes_to_send)
-
-    bytes_recv = p2pConn.recv()
-    bytes_recved = len(bytes_recv)
-
-    recvd = int( bytes_recv.decode() )
-    if recvd != last_recvd + 1: error_count += 1
-    last_recvd = recvd
-
-    tn = time.time()
-    if tn - timepoint >= 1:
-        down_speed = bytes_recved
-        up_speed = bytes_sent
-        bytes_recved = 0
-        bytes_sent = 0
-        timepoint = tn
-
-    print(f"sent: {to_send}    recvd: {recvd}    errors: {error_count}   upspeed: {up_speed*8} b/s  downspeed: {down_speed*8} b/s")
-    to_send += 1
+    connection.send(f"{time.time()}".encode())
+    data = connection.recv()
+    print(f"diff {time.time() - float(data.decode())}")

@@ -1,163 +1,85 @@
 import socket
 import time
-import threading
 import json
-import urllib.request
+
+TIMEOUT_TIME = 10 # sec
+SERVER_ADDR = ('0.0.0.0', 1234)
+
+class Peer:
+    def __init__(self, ip:str, port:int):
+        self.ip = ip
+        self.port = port
+        self.last_updated = time.time()
+
+    def __init__(self, addr: tuple[str, int]):
+        self.ip = addr[0]
+        self.port = addr[1]
+        self.last_updated = time.time()
+
+    def is_out_dated(self):
+        return time.time() - self.last_updated > TIMEOUT_TIME
+
+    def update(self):
+        self.last_updated = time.time()
+
+    def addr(self):
+        return (self.ip, self.port)
+
+    def __eq__(self, value):
+        if value == None: return False
+        return self.ip==value.ip and self.port==value.port
+
+    def __hash__(self):
+        return hash(self.ip) + hash(self.port)
+
+    def __str__(self):
+        return f"{self.ip}:{self.port}"
 
 
-
-class Cupple:
-
-    class IHaveABoyfriend(Exception):
-        def __init__(self, message: str):
-            self.msg = message
-        def __str__(self):
-            return f"Sorry I have a boyfriend. {self.msg}" 
-
-    class YouNotOnTheList(Exception):
-        def __init__(self, message: str):
-            self.msg = message
-        def __str__(self):
-            return f"Sorry you not on the list. {self.msg}" 
+# socket setup
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind(SERVER_ADDR)
 
 
-    ip1: str
-    port1: int
-    set1: bool
-    popped1: bool
+# main loop
+other_peer: Peer = None
 
-    ip2: str
-    port2: int
-    set2: bool
-    popped2: bool
-
-    lock: threading.Lock
-    
-
-    def __init__(self):
-        self.set1 = False
-        self.set2 = False
-        self.popped1 = False
-        self.popped2 = False
-        self.lock = threading.Lock()
-    
-    def regist(self, ip:str, port:int):
-        self.lock.acquire()
-        if not self.set1:
-            self.set1 = True
-            self.ip1 = ip
-            self.port1 = port
-        elif not self.set2:
-            self.set2 = True
-            self.ip2 = ip
-            self.port2 = port
-        else:
-            self.lock.release()
-            raise self.IHaveABoyfriend("")
-        self.lock.release()
-    
-    def unregist(self, ip:str, port:int):
-        self.lock.acquire()
-        if self.set1 and self.ip1==ip and self.port1==port:
-            self.set1 = False
-            self.ip1 = None
-            self.port1 = None
-        elif self.set2 and self.ip2==ip and self.port2==port:
-            self.set2 = False
-            self.ip2 = None
-            self.port2 = None
-        self.lock.release()
-    
-    
-    def other(self, ip:str, port:int) -> tuple:
-        out = None
-        self.lock.acquire()
-        if self.set1 and self.ip1==ip and self.port1==port:
-            while not self.set2:
-                self.lock.release()
-                time.sleep(0.01)
-                self.lock.acquire()
-            out = (self.ip2, self.port2)
-            self.popped2 = True
-        elif self.set2 and self.ip2==ip and self.port2==port:
-            while not self.set1:
-                self.lock.release()
-                time.sleep(0.01)
-                self.lock.acquire()
-            self.popped1 = True
-            out = (self.ip1, self.port1)
-        else:
-            raise self.YouNotOnTheList("")
-        self.lock.release()
-        return out
-    
-    def clear(self):
-        self.lock.acquire()
-        if self.popped1 and self.popped2:
-            self.set1 = False
-            self.set2 = False
-            self.popped1 = False
-            self.popped2 = False
-            self.ip1 = None
-            self.ip2 = None
-            self.port1 = None
-            self.port2 = None
-        self.lock.release()
-
-
-
-cupple = Cupple()
-
-def handle_client(cli: socket.socket, addr: tuple):
-    global cupple
-    ip, port = "", 0
+while True:
+    print( "---\t", end="" )
     try:
 
+        data, addr = sock.recvfrom(1200)
 
-        print( f"[LOG] {addr[0]}:{addr[1]} connected" )
+        # update
+        if other_peer != None:
+                if other_peer.is_out_dated():
+                    print(f"peer timeout {other_peer}")
+                    other_peer = None
 
-        port = int(cli.recv(1024).decode("utf-8"))
-        if port == 0: port = addr[1]
+        current_peer = Peer(addr)
 
-        ip = addr[0]
+        if other_peer == None:
+            print(f"new peer online: {current_peer}")
+            other_peer = current_peer
+        elif other_peer == current_peer:
+            print(f"peer updated {other_peer}")
+            other_peer.update()
+        else:
+            print(f"peers cuppled {current_peer} <---> {other_peer}")
+            sock.sendto(json.dumps({
+                "ip": other_peer.ip,
+                "port": other_peer.port
+            }).encode("utf-8"), current_peer.addr())
+            sock.sendto(json.dumps({
+                "ip": current_peer.ip,
+                "port": current_peer.port
+            }).encode("utf-8"), other_peer.addr())
+            other_peer = None
+            continue
 
-        cupple.regist(ip, port)
-        print( f"[LOG] {ip}:{port} registered" )
-
-        other = cupple.other(ip, port)
-        print( f"[LOG] {ip}:{port} cuppled with {other[0]}{other[1]}" )
-
-        cupple.clear()
-
-        to_send = json.dumps({
-            "ip": other[0],
-            "port": other[1]
-        }).encode("utf-8")
-
-        cli.send(to_send)
-        print( f"[LOG] {ip}:{port} notified" )
+        sock.sendto(b'OK', current_peer.addr())
 
 
-    except Cupple.IHaveABoyfriend as e:
-        cupple.unregist(ip, port)
-        print(f"[ERROR] i have a boyfriend. {e}")
-    except Cupple.YouNotOnTheList as e:
-        cupple.unregist(ip, port)
-        print(f"[ERROR] you not invited. {e}")
-    except Exception as e:
-        cupple.unregist(ip, port)
-        print(f"[ERROR] other. {e}")
         
-
-IP, PORT = "127.0.0.1", 1235
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.bind((IP, PORT))
-sock.listen(1)
-
-external_ip = urllib.request.urlopen('https://api.ipify.org').read().decode('utf8')
-print(f"listening on local: {IP}:{PORT}  public (maybe): {external_ip}")
-
-
-while 1:
-    cli, addr = sock.accept()
-    threading.Thread( target=handle_client, args=(cli, addr) ).start()
+    except Exception as e:
+        print(f"[ERROR] {e}")
