@@ -6,7 +6,7 @@ import random
 
 
 MY_ADDR = ("0.0.0.0", 0)
-SERVER_ADDR = ("127.0.0.1", 1234)
+SERVER_ADDR = ("192.168.0.2", 1234)
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind(MY_ADDR)
@@ -33,6 +33,8 @@ while True:
 print(f"other peer is: {target_addr[0]}:{target_addr[1]}")
 
 connection = p2p.P2PConnection(sock, target_addr[0], target_addr[1])
+
+connection.punch_hole()
 
 nums = {}
 send_back = []

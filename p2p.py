@@ -31,9 +31,10 @@ class P2PConnection:
     def send(self, data:bytes):
         self.socket.sendto( data, (self.target_ip, self.target_port) )
     
-    def recv(self, buff_size=1200) -> bytes:
+    def recv(self, buff_size=1200, timeout=1) -> bytes:
         data = b""
         while 1:
+            self.socket.settimeout(timeout)
             data, addr = self.socket.recvfrom(buff_size)
             if addr[0]==self.target_ip and addr[1]==self.target_port:
                 break
