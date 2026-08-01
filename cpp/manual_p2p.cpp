@@ -33,7 +33,9 @@ int main(){
 
     try{
 
-        P2P_connection connection{my_port, Address{target_ip, target_port}};
+        UDP_socket sock{Address{"0.0.0.0", my_port}};
+
+        P2P_connection connection{&sock, Address{target_ip, target_port}};
 
         connection.punch_hole();
 
