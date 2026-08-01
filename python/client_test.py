@@ -6,7 +6,7 @@ import random
 
 
 MY_ADDR = ("0.0.0.0", 0)
-SERVER_ADDR = ("192.168.0.2", 1234)
+SERVER_ADDR = ("127.0.0.1", 50020)
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind(MY_ADDR)

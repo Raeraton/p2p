@@ -3,7 +3,7 @@ import time
 import json
 
 TIMEOUT_TIME = 10 # sec
-SERVER_ADDR = ('0.0.0.0', 1234)
+SERVER_ADDR = ('0.0.0.0', 50020)
 
 class Peer:
     def __init__(self, ip:str, port:int):
